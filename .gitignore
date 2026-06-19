@@ -1,0 +1,3 @@
+# HUPC SRS and MoM — keep only the zipped archives, ignore extracted files
+HUPC SRS and MoM/*
+!HUPC SRS and MoM/*.zip
