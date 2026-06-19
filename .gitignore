@@ -1,3 +1,2 @@
-# HUPC SRS and MoM — keep only the zipped archives, ignore extracted files
-HUPC SRS and MoM/*
-!HUPC SRS and MoM/*.zip
+# HUPC SRS and MoM — keep entire folder out of git (large PDFs/zips)
+HUPC SRS and MoM/
