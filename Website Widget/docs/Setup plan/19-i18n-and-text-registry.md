@@ -54,31 +54,47 @@ export const validation = {
 ```
 
 ## Bundle assembly + namespaces
-Per-portal keys **namespaced**; shared registry across portals.
+Namespace set = `common` + this portal's namespace **`widget`**. `common.*` is shared across portals;
+the `widget` namespace holds widget-portal-only keys.
 ```ts
-// src/i18n/en/index.ts
-export const en = {
-  common: { buttons, labels, titles, descriptions, tableHeaders, validation, enums,
-            messages: { success, error } },           // shared across portals
-  provider: { /* provider-portal-only keys */ },
-  patient:  { /* patient-portal-only keys */ },
-};
+// src/i18n/en/common.ts
+export const common = { buttons, labels, titles, descriptions, tableHeaders, validation, enums,
+                        messages: { success, error } };   // shared across portals
+// src/i18n/en/widget.ts
+export const widget = { /* widget-portal-only keys (booking-flow steps) */ };
 ```
+
+### Lazy-load locales (on-demand per locale + namespace)
+Only the active locale+namespace is fetched (matters for embed bundle size) — no eager `resources` blob.
 ```ts
 // src/i18n/index.ts
-i18n.use(initReactI18next).init({
-  resources: { en: { translation: flatten(en) }, es: {...}, ar: {...} },
-  lng: 'en', fallbackLng: 'en', interpolation: { escapeValue: false },
-});
+import i18n from 'i18next';
+import { initReactI18next } from 'react-i18next';
+import resourcesToBackend from 'i18next-resources-to-backend';
+
+i18n
+  .use(resourcesToBackend((lng, ns) => import(`./${lng}/${ns}.ts`)))  // lazy per (locale, namespace)
+  .use(initReactI18next)
+  .init({
+    lng: 'en', fallbackLng: 'en',
+    ns: ['common', 'widget'], defaultNS: 'common',
+    interpolation: { escapeValue: false },
+  });
 export { useTranslation } from 'react-i18next';
 export const t = i18n.t.bind(i18n);
 ```
+- Add **`i18next-resources-to-backend`** as a dependency.
 
 ## Typed keys (compile error on missing key)
+The `TxKey` union spans **every namespace** (not just `common`), so portal-namespace keys are type-checked too.
 ```ts
-// src/i18n/types.ts  (generated from en bundle)
+// src/i18n/types.ts  (generated from the en bundle — ALL namespaces, not just common)
+import type { common } from './en/common';
+import type { widget } from './en/widget';
 type Paths<T> = /* recursive dotted-path union */;
-export type TxKey = Paths<typeof en['common']>;     // 'buttons.createPatient' | ...
+export type TxKey =
+  | `common:${Paths<typeof common>}`
+  | `widget:${Paths<typeof widget>}`;   // every namespace typed → missing keys are compile errors
 ```
 ```ts
 // react-i18next.d.ts — make t() typed
@@ -134,6 +150,21 @@ export default [
 ```
 - CI fails on any raw JSX string or untranslated label/placeholder/aria attr.
 
+## Translation validation in CI
+English is the source of truth; a CI check fails the build if any locale (es, ar) drifts from en.
+```ts
+// scripts/i18n-validate.ts — English = source of truth.
+// Flatten each locale's key set per namespace and diff against en.
+// Exit non-zero on any MISSING or EXTRA key. Wired into 13-quality-gates CI.
+```
+- Add `"i18n:check": "tsx scripts/i18n-validate.ts"` to package scripts; it runs in CI (file 13).
+
+## Legal & business content stays out of the FE bundle
+Long-form legal / consent / Terms / clinical-template / marketing copy is served from the backend / CMS
+APIs at runtime — it is **NOT** placed in i18n category files. The i18n registry is for UI chrome only
+(labels, buttons, titles, validation, enums, toasts). This keeps legally-reviewed content versioned
+server-side and out of the frontend build.
+
 ## Workflow to add copy
 | Step | Action |
 |------|--------|
@@ -144,5 +175,8 @@ export default [
 
 ## Do / Don't
 - ✅ Every visible string + aria/alt/placeholder via `t()`; zod messages are validation keys.
-- ✅ Namespace portal-specific copy; share `common.*`.
+- ✅ Namespace portal-specific copy (`widget`); share `common.*`.
+- ✅ Lazy-load locales+namespaces on demand (no eager `resources` blob) — keeps the embed bundle small.
+- ✅ CI-validated locales: English is source of truth; `i18n:check` fails the build on drift (es/ar).
+- ✅ Legal / consent / Terms / clinical-template / marketing copy served from backend/CMS at runtime — never in i18n.
 - ❌ No literal JSX text, no string concatenation for sentences (use interpolation), no per-component copy constants.

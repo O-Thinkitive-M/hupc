@@ -14,8 +14,8 @@
 
 ```bash
 # Node >= 22.18 required (Node guard runs on install; see 17-api-sdk-orval.md)
-npm create vite@latest harmony-emr -- --template react-ts
-cd harmony-emr
+npm create vite@latest harmony-emr-provider -- --template react-ts
+cd harmony-emr-provider
 
 # runtime (core foundation only)
 npm i @mui/material @mui/icons-material @emotion/react @emotion/styled \

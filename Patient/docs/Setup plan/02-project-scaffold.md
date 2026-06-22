@@ -14,8 +14,8 @@
 
 ```bash
 # Node >= 22.18 required (Node guard runs on install; see 17-api-sdk-orval.md)
-npm create vite@latest harmony-emr -- --template react-ts
-cd harmony-emr
+npm create vite@latest harmony-emr-patient -- --template react-ts
+cd harmony-emr-patient
 
 # runtime (core foundation only)
 npm i @mui/material @mui/icons-material @emotion/react @emotion/styled \
@@ -131,7 +131,7 @@ Per-environment files, Vite-prefixed (`VITE_*`) vars only are exposed to the cli
 VITE_API_URL=https://api.dev.harmony.local
 VITE_APP_ENV=development
 VITE_DEFAULT_TZ=America/New_York
-VITE_PORTAL=provider   # admin | provider | patient | widget
+VITE_PORTAL=patient   # admin | provider | patient | widget
 # Integration vars added only when that integration ships, e.g.:
 # VITE_STRIPE_PUBLISHABLE_KEY=pk_test_xxx   (added with Stripe/payments)
 ```

@@ -54,31 +54,46 @@ export const validation = {
 ```
 
 ## Bundle assembly + namespaces
-Per-portal keys **namespaced**; shared registry across portals.
+Two namespaces: **`common`** (shared across all portals) + **`patient`** (this portal's only keys).
+`common.*` holds the shared chrome; the `patient` namespace holds patient-portal-only copy.
 ```ts
-// src/i18n/en/index.ts
-export const en = {
-  common: { buttons, labels, titles, descriptions, tableHeaders, validation, enums,
-            messages: { success, error } },           // shared across portals
-  provider: { /* provider-portal-only keys */ },
-  patient:  { /* patient-portal-only keys */ },
-};
+// src/i18n/en/common.ts
+export const common = { buttons, labels, titles, descriptions, tableHeaders, validation, enums,
+                        messages: { success, error } } as const;   // shared across portals
+// src/i18n/en/patient.ts
+export const patient = { /* patient-portal-only keys */ } as const;
 ```
+
+### Lazy-load locales (on-demand per locale + namespace)
+Only the active locale+namespace is fetched (matters for bundle size). Requires
+`i18next-resources-to-backend` (add as a dependency).
 ```ts
 // src/i18n/index.ts
-i18n.use(initReactI18next).init({
-  resources: { en: { translation: flatten(en) }, es: {...}, ar: {...} },
-  lng: 'en', fallbackLng: 'en', interpolation: { escapeValue: false },
-});
+import i18n from 'i18next';
+import { initReactI18next } from 'react-i18next';
+import resourcesToBackend from 'i18next-resources-to-backend';
+
+i18n
+  .use(resourcesToBackend((lng, ns) => import(`./${lng}/${ns}.ts`)))  // lazy per (locale, namespace)
+  .use(initReactI18next)
+  .init({
+    lng: 'en', fallbackLng: 'en',
+    ns: ['common', 'patient'], defaultNS: 'common',
+    interpolation: { escapeValue: false },
+  });
 export { useTranslation } from 'react-i18next';
 export const t = i18n.t.bind(i18n);
 ```
 
 ## Typed keys (compile error on missing key)
 ```ts
-// src/i18n/types.ts  (generated from en bundle)
+// src/i18n/types.ts  (generated from the en bundle — ALL namespaces, not just common)
+import type { common } from './en/common';
+import type { patient } from './en/patient';
 type Paths<T> = /* recursive dotted-path union */;
-export type TxKey = Paths<typeof en['common']>;     // 'buttons.createPatient' | ...
+export type TxKey =
+  | `common:${Paths<typeof common>}`
+  | `patient:${Paths<typeof patient>}`;   // every namespace typed → missing keys are compile errors
 ```
 ```ts
 // react-i18next.d.ts — make t() typed
@@ -142,7 +157,26 @@ export default [
 | 3 | Regenerate `types.ts` (build/codegen) |
 | 4 | Use `t('category.key')` — autocomplete confirms it exists |
 
+## Translation validation in CI
+English is the **source of truth**; a CI check fails the build if any locale (es, ar) drifts from en.
+```ts
+// scripts/i18n-validate.ts — English = source of truth.
+// Flatten each locale's key set per namespace and diff against en.
+// Exit non-zero on any MISSING or EXTRA key. Wired into 13-quality-gates CI.
+```
+- Add to package scripts: `"i18n:check": "tsx scripts/i18n-validate.ts"` — runs in CI (see `13-quality-gates.md`).
+
+## Legal & business content stays out of the FE bundle
+Long-form legal / consent / Terms / clinical-template / marketing copy is served from the backend / CMS
+APIs at runtime — it is **NOT** placed in i18n category files. The i18n registry is for **UI chrome only**
+(labels, buttons, titles, validation, enums, toasts). This keeps legally-reviewed content versioned
+server-side and out of the frontend build.
+
 ## Do / Don't
 - ✅ Every visible string + aria/alt/placeholder via `t()`; zod messages are validation keys.
-- ✅ Namespace portal-specific copy; share `common.*`.
+- ✅ Namespace portal-specific copy (`patient`); share `common.*`.
+- ✅ Lazy-load namespaces on demand (only active locale+namespace fetched).
+- ✅ Locales CI-validated against en (source of truth) — build fails on drift.
+- ✅ Serve legal/consent/Terms/clinical/marketing copy from the backend/CMS at runtime, not i18n files.
 - ❌ No literal JSX text, no string concatenation for sentences (use interpolation), no per-component copy constants.
+- ❌ Don't eager-load all locales/namespaces; don't put long-form legal/business content in the FE bundle.

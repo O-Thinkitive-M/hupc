@@ -54,31 +54,46 @@ export const validation = {
 ```
 
 ## Bundle assembly + namespaces
-Per-portal keys **namespaced**; shared registry across portals.
+Two namespaces: **`common`** (shared across portals) + **`provider`** (portal-only keys).
 ```ts
 // src/i18n/en/index.ts
 export const en = {
-  common: { buttons, labels, titles, descriptions, tableHeaders, validation, enums,
-            messages: { success, error } },           // shared across portals
+  common:   { buttons, labels, titles, descriptions, tableHeaders, validation, enums,
+              messages: { success, error } },         // shared across portals
   provider: { /* provider-portal-only keys */ },
-  patient:  { /* patient-portal-only keys */ },
 };
 ```
+Locales are **lazy-loaded per (locale, namespace)** — only the active locale + namespace is fetched,
+keeping the bundle lean:
 ```ts
 // src/i18n/index.ts
-i18n.use(initReactI18next).init({
-  resources: { en: { translation: flatten(en) }, es: {...}, ar: {...} },
-  lng: 'en', fallbackLng: 'en', interpolation: { escapeValue: false },
-});
+import i18n from 'i18next';
+import { initReactI18next } from 'react-i18next';
+import resourcesToBackend from 'i18next-resources-to-backend';
+
+i18n
+  .use(resourcesToBackend((lng, ns) => import(`./${lng}/${ns}.ts`)))  // lazy per (locale, namespace)
+  .use(initReactI18next)
+  .init({
+    lng: 'en', fallbackLng: 'en',
+    ns: ['common', 'provider'], defaultNS: 'common',
+    interpolation: { escapeValue: false },
+  });
 export { useTranslation } from 'react-i18next';
 export const t = i18n.t.bind(i18n);
 ```
+> Add **`i18next-resources-to-backend`** as a dependency.
 
 ## Typed keys (compile error on missing key)
+The typed union spans **every namespace** (not just `common`) so portal keys are also compile-checked:
 ```ts
-// src/i18n/types.ts  (generated from en bundle)
+// src/i18n/types.ts  (generated from the en bundle — ALL namespaces, not just common)
+import type { common } from './en/common';
+import type { provider } from './en/provider';
 type Paths<T> = /* recursive dotted-path union */;
-export type TxKey = Paths<typeof en['common']>;     // 'buttons.createPatient' | ...
+export type TxKey =
+  | `common:${Paths<typeof common>}`
+  | `provider:${Paths<typeof provider>}`;   // every namespace typed → missing keys are compile errors
 ```
 ```ts
 // react-i18next.d.ts — make t() typed
@@ -142,7 +157,27 @@ export default [
 | 3 | Regenerate `types.ts` (build/codegen) |
 | 4 | Use `t('category.key')` — autocomplete confirms it exists |
 
+## Translation validation in CI
+English is the **source of truth**; a CI check fails the build if any locale (`es`, `ar`) drifts from `en`.
+```ts
+// scripts/i18n-validate.ts — English = source of truth.
+// Flatten each locale's key set per namespace and diff against en.
+// Exit non-zero on any MISSING or EXTRA key. Wired into 13-quality-gates CI.
+```
+Add to package scripts and note it runs in CI (file 13):
+```jsonc
+"scripts": { "i18n:check": "tsx scripts/i18n-validate.ts" }
+```
+
+## Legal & business content stays out of the FE bundle
+Long-form legal / consent / Terms / clinical-template / marketing copy is served from the backend / CMS
+APIs at runtime — it is **NOT** placed in i18n category files. The i18n registry is for **UI chrome only**
+(labels, buttons, titles, validation, enums, toasts). This keeps legally-reviewed content versioned
+server-side and out of the frontend build.
+
 ## Do / Don't
 - ✅ Every visible string + aria/alt/placeholder via `t()`; zod messages are validation keys.
-- ✅ Namespace portal-specific copy; share `common.*`.
+- ✅ Namespace portal-specific copy (`provider:*`); share `common.*`. Namespaces are **lazy-loaded** per (locale, namespace).
+- ✅ Locales are **CI-validated** against en (source of truth) — missing/extra keys fail the build.
+- ✅ Legal / consent / clinical-template / marketing copy is served from the **backend / CMS**, not the i18n bundle.
 - ❌ No literal JSX text, no string concatenation for sentences (use interpolation), no per-component copy constants.

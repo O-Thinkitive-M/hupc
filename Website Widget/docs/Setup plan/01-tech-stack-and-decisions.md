@@ -1,7 +1,9 @@
 # 01 — Tech Stack & Decisions
 
 > Pinned, coherent, latest-stable set. **TypeScript strict** throughout. **Node >= 22.18** (Orval 8 requirement).
-> Identical across Admin/Provider/Patient/Website-Widget portals.
+> **Core Foundation deps are identical** across Admin/Provider/Patient/Website-Widget. The **Integration
+> set differs per portal** — see the per-portal Integration table below. TypeScript strict throughout.
+> Node >= 22.18 (Orval 8).
 
 ---
 
@@ -54,10 +56,14 @@
 
 | Integration | Package(s) | Added at step |
 |---|---|---|
-| API typed SDK | `orval` (devDep) + generated `src/sdk/**` | When a backend OpenAPI spec exists — see `17-api-sdk-orval.md` (wired now, generate later) |
-| Payments | `@stripe/stripe-js`, `@stripe/react-stripe-js` | When Billing/payments integration is built |
-| Insurance-card OCR | OCR SDK/lib (TBD) | When Website-Widget / registration OCR is built |
-| Telehealth | Google Meet integration lib (TBD) | When telehealth is built |
+| API typed SDK | `orval` (devDep) + generated `src/sdk/**` | ✅ used by all portals (shared) — see `17-api-sdk-orval.md` (wired now, generate later) |
+| Payments | `@stripe/stripe-js`, `@stripe/react-stripe-js` | ✅ Payment-confirmation step |
+| Insurance-card OCR | OCR SDK/lib (TBD) | ✅ Insurance-card-OCR step |
+| Telehealth | Google Meet integration lib (TBD) | – not used by Website Widget |
+
+> **`@tanstack/react-virtual` is not needed** for the widget (no large tables) — safe to omit from this
+> portal's install to keep the embed bundle minimal. Lazy-loaded i18n locales (see file 19) matter most
+> here for embed size.
 
 > **E2E testing is out of FE scope** (owned separately by QA) — no Playwright/MSW e2e packages here.
 > Backend-side vendors (**SMS = AWS SNS**, **Email = EnGard**, **Telehealth = Google Meet**) are not

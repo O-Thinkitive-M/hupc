@@ -1,7 +1,9 @@
 # 01 — Tech Stack & Decisions
 
 > Pinned, coherent, latest-stable set. **TypeScript strict** throughout. **Node >= 22.18** (Orval 8 requirement).
-> Identical across Admin/Provider/Patient/Website-Widget portals.
+> **Core Foundation deps are identical** across Admin/Provider/Patient/Website-Widget. The **Integration
+> set differs per portal** — see the per-portal Integration table below. TypeScript strict throughout.
+> Node >= 22.18 (Orval 8).
 
 ---
 
@@ -54,10 +56,12 @@
 
 | Integration | Package(s) | Added at step |
 |---|---|---|
-| API typed SDK | `orval` (devDep) + generated `src/sdk/**` | When a backend OpenAPI spec exists — see `17-api-sdk-orval.md` (wired now, generate later) |
-| Payments | `@stripe/stripe-js`, `@stripe/react-stripe-js` | When Billing/payments integration is built |
-| Insurance-card OCR | OCR SDK/lib (TBD) | When Website-Widget / registration OCR is built |
-| Telehealth | Google Meet integration lib (TBD) | When telehealth is built |
+| API typed SDK | `orval` (devDep) + generated `src/sdk/**` ✅ used by all portals (shared) | When a backend OpenAPI spec exists — see `17-api-sdk-orval.md` (wired now, generate later) |
+| Payments | `@stripe/stripe-js`, `@stripe/react-stripe-js` – not used by Provider (billing here is view/manage; patient payments live in Patient & Website-Widget) | When Billing/payments integration is built |
+| Insurance-card OCR | OCR SDK/lib (TBD) – not used by Provider | When Website-Widget / registration OCR is built |
+| Telehealth | Google Meet integration lib (TBD) ✅ Telehealth feature (Provider ships telehealth) | When telehealth is built |
+
+> **insurance-eligibility** is consumed via a backend API (no frontend npm package).
 
 > **E2E testing is out of FE scope** (owned separately by QA) — no Playwright/MSW e2e packages here.
 > Backend-side vendors (**SMS = AWS SNS**, **Email = EnGard**, **Telehealth = Google Meet**) are not

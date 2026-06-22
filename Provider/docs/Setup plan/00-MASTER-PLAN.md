@@ -1,13 +1,17 @@
 # 00 — Master Plan: Harmony EMR Frontend Foundation
 
 > **Scope:** Foundation architecture for the HUPC / Harmony EMR React frontend (client: Harmony United Psychiatric Care).
-> **Portal note:** This *Setup plan* is **identical** across the **Admin / Provider / Patient / Website-Widget** portals. Only **config values** differ (nav modules, route maps, status registries, permissions, brand toggles). The primitives, theme system, and scaffold are shared verbatim.
+> **Portal note:** The **foundation, theme system, scaffold, and config-driven primitives** are shared
+> verbatim across the Admin / Provider / Patient / Website-Widget portals. The **portal-specific sections
+> in THIS file** — Screen→Primitive Map, module/feature set, and Build Phase Sequence — are tailored to the
+> **Provider** portal. Config values (nav modules, route maps, status registries, permissions,
+> integration set) differ per portal.
 
 ---
 
 ## Executive Summary
 - Large psychiatric-care EHR: screens are **complex but highly repetitive** (tables, filters, KPI strips, tabbed detail pages, schema-driven forms).
-- **Core thesis:** build a *small set of config-driven primitives*, then **assemble every screen declaratively** from `config + primitives`. No bespoke per-screen layout code.
+- **Core thesis:** build a *small set of config-driven primitives*, then **assemble every screen declaratively** from `config + primitives` across the **17-module** nav-shell EHR clinician workspace. No bespoke per-screen layout code.
 - Outcome: change-safe, consistent, fully-responsive, i18n-clean, cross-browser UI delivered fast.
 
 ---
@@ -23,43 +27,46 @@
 
 | Screen pattern | Primitive(s) |
 |---|---|
-| List/index (Leads, Patients, Billing) | `DataTable` + `FilterBar` + `StatusChip` + `ActionDock` |
-| KPI / dashboard strip | `KpiCard` grid |
-| Detail / record page | `NestedTabPage` + `MasterDetail`/`SplitPane` |
-| Create/Edit record | `SchemaForm` + `FormSection` + `AsyncAutocomplete` |
-| Scheduling / calendar | `Calendar` + `TimeSlotGrid` |
-| Documents (Legal, charts) | `DocumentViewer` + `DocumentLibrary` |
-| Settings (nested) | `SettingsHub` (NestedTabPage variant) |
-| Modal/side flows | `Drawer` / `Modal` |
-| Async/data states | `QueryState` + `ErrorBoundary` |
-| Long text cells | `TruncatedText` |
+| List/index (Leads, Patients, Referrals, Groups, Reports) | DataTable + FilterBar + StatusChip + ActionDock |
+| KPI / dashboard strip | KpiCard grid |
+| Patient chart (detail) | NestedTabPage + MasterDetail / SplitPane |
+| Create/Edit (Registration, Clinical Documentation) | SchemaForm + FormSection + AsyncAutocomplete |
+| Scheduling / calendar | Calendar + TimeSlotGrid |
+| Documents (Legal, charts) | DocumentViewer + DocumentLibrary |
+| Telehealth visit | Video panel + Drawer |
+| Settings (nested) | SettingsHub |
+| Async/data states | QueryState + ErrorBoundary |
 
 ---
 
-## Topic Files (01–20) — Composition Map
+## Topic Files (00–23) — Composition Map
 
 | # | File | One-line purpose |
 |---|---|---|
+| 00 | MASTER-PLAN | This file — foundation thesis + portal map |
 | 01 | tech-stack-and-decisions | Pinned deps + conflict resolution |
 | 02 | project-scaffold | Vite init, tsconfig, folder tree, env |
 | 03 | theme-system | `src/theme/` tokens + `createTheme` |
-| 04 | i18n-text-registry | No-literal-string registry + ESLint |
-| 05 | routing-deep-linking | `createBrowserRouter`, URL state |
-| 06 | api-sdk-orval | Orval SDK + axios mutator + React Query |
-| 07 | state-management | Zustand stores + query cache split |
-| 08 | datatable-primitive | Config-driven virtualized table |
-| 09 | statuschip-registry | Status registry + chip |
-| 10 | filterbar-primitive | Declarative filters → URL |
-| 11 | kpicard-primitive | KPI/metric cards |
-| 12 | schemaform-forms | RHF + zod SchemaForm/FormSection |
-| 13 | asyncautocomplete | Debounced async select |
-| 14 | nestedtabpage-settingshub | Tabbed detail + settings |
-| 15 | splitpane-masterdetail | Master/detail layouts |
-| 16 | drawer-modal | Overlay primitives |
-| 17 | document-viewer-library | Document view/manage |
-| 18 | calendar-timeslotgrid | Scheduling primitives |
-| 19 | feedback-error-query-state | ErrorBoundary, QueryState, toasts |
-| 20 | layout-shell-nav | App shell + 11-module nav |
+| 04 | config-registries | Nav / status / table / filter config registries |
+| 05 | responsive-system | Breakpoints, fluid layout 320→1440+ |
+| 06 | navigation-and-routing | `createBrowserRouter`, route tree, deep-linking |
+| 07 | state-and-data | Zustand stores + React Query cache split |
+| 08 | data-display-system | DataTable + FilterBar + StatusChip + KpiCard |
+| 09 | forms-system | RHF + zod SchemaForm / FormSection / AsyncAutocomplete |
+| 10 | layout-and-overlays | AppShell, SplitPane, NestedTabPage, Drawer / Modal |
+| 11 | accessibility-keyboard | WCAG 2.1 AA, keyboard nav, focus, ARIA |
+| 12 | security-hipaa | PHI handling, audit, session, HIPAA controls |
+| 13 | quality-gates | Lint / typecheck / test gates, CI |
+| 14 | performance-scalability | Virtualization, code-split, bundle budgets |
+| 15 | testing | Vitest + Testing Library + jest-axe |
+| 16 | foundation-checklist | Phase completion checklist |
+| 17 | api-sdk-orval | Orval SDK + axios mutator + React Query |
+| 18 | cross-browser-compat | Chrome / Edge / Safari / Firefox + iOS / Android |
+| 19 | i18n-and-text-registry | No-literal-string typed registry + ESLint |
+| 20 | error-handling | ErrorBoundary + QueryState + toasts |
+| 21 | datetime-timezone | dayjs, timezone handling |
+| 22 | mcp-integration-setup | MCP integration setup |
+| 23 | data-structures | Right data structure per use case + reusable typed `src/lib/ds/` helpers |
 
 ---
 
@@ -89,7 +96,7 @@
 | 2. Theme | `src/theme/` tokens + `createTheme` + provider (file 03) |
 | 3. Config | i18n registry, router, status registries, SDK (files 04–07) |
 | 4. Primitives | DataTable…QueryState (files 08–19) |
-| 5. Features | Assemble 11 modules from config + primitives (file 20 + features) |
+| 5. Features | Assemble **17 modules** from config + primitives (file 20 + features) |
 
 ---
 
@@ -104,3 +111,4 @@
 - [ ] Data fetched via Orval SDK hooks; loading/error via `QueryState`.
 - [ ] URL deep-linking for filters/tabs/pagination where applicable.
 - [ ] Lint + typecheck + tests green.
+- [ ] Lookups/membership/grouping use the right data structure (`Map`/`Set`/`Record` via `src/lib/ds/`), not O(n) array scans or ad-hoc boilerplate (file 23).

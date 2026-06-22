@@ -2,6 +2,7 @@
 
 > Vite + React + TypeScript (strict), feature-slice layout, path aliases, multi-env config.
 > Identical scaffold across Admin/Provider/Patient/Website-Widget portals.
+> **Note:** This portal builds an **embeddable single-flow booking widget** (mounts on a marketing site), not a nav-shell EHR — scaffold structure is shared, but it has no AppShell/nav and is bundle-size sensitive.
 
 ---
 
@@ -14,8 +15,8 @@
 
 ```bash
 # Node >= 22.18 required (Node guard runs on install; see 17-api-sdk-orval.md)
-npm create vite@latest harmony-emr -- --template react-ts
-cd harmony-emr
+npm create vite@latest harmony-emr-widget -- --template react-ts
+cd harmony-emr-widget
 
 # runtime (core foundation only)
 npm i @mui/material @mui/icons-material @emotion/react @emotion/styled \
@@ -131,7 +132,7 @@ Per-environment files, Vite-prefixed (`VITE_*`) vars only are exposed to the cli
 VITE_API_URL=https://api.dev.harmony.local
 VITE_APP_ENV=development
 VITE_DEFAULT_TZ=America/New_York
-VITE_PORTAL=provider   # admin | provider | patient | widget
+VITE_PORTAL=widget   # admin | provider | patient | widget
 # Integration vars added only when that integration ships, e.g.:
 # VITE_STRIPE_PUBLISHABLE_KEY=pk_test_xxx   (added with Stripe/payments)
 ```
