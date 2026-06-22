@@ -65,7 +65,7 @@
 | 20 | error-handling | ErrorBoundary + QueryState + toasts |
 | 21 | datetime-timezone | dayjs, timezone handling |
 | 22 | mcp-integration-setup | MCP integration setup |
-| 23 | data-structures | Right data structure per use case + reusable typed `src/lib/ds/` helpers |
+| 23 | data-structures | Right data structure + algorithm per use case; reusable typed `src/lib/ds/` + `src/lib/algo/` helpers |
 
 ---
 
